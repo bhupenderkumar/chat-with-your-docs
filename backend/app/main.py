@@ -14,12 +14,20 @@ from pypdf import PdfReader
 load_dotenv()
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+OPENROUTER_API_BASE = os.getenv("OPENROUTER_API_BASE", "https://openrouter.ai").rstrip("/")
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "openai/text-embedding-3-small")
+CHAT_MODEL = os.getenv("CHAT_MODEL", "gpt-4o-mini")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 
 app = FastAPI(title="Chat With Your Docs API")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -56,14 +64,14 @@ def embed_text(text: str) -> List[float]:
         raise RuntimeError("OPENROUTER_API_KEY is not configured")
 
     response = requests.post(
-        "https://openrouter.ai/api/v1/embeddings",
+        f"{OPENROUTER_API_BASE}/api/v1/embeddings",
         headers={
             "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-            "HTTP-Referer": "http://localhost:3000",
+            "HTTP-Referer": "http://localhost:3001",
             "X-Title": "Chat With Your Docs",
         },
         json={
-            "model": "openai/text-embedding-3-small",
+            "model": EMBEDDING_MODEL,
             "input": text,
         },
         timeout=60,
@@ -171,7 +179,7 @@ def chat(request: ChatRequest) -> Dict[str, Any]:
             "https://api.groq.com/openai/v1/chat/completions",
             headers={"Authorization": f"Bearer {GROQ_API_KEY}"},
             json={
-                "model": "llama-3.1-8b-instant",
+                "model": CHAT_MODEL,
                 "messages": [
                     {
                         "role": "system",
